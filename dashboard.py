@@ -1231,13 +1231,13 @@ def get_audio_base64(filename):
         print("Error loading audio file:", e)
         return None
 
-alarm_base64 = get_audio_base64("Alarm.mp3")
-alarm_audio = f"""
-<audio controls autoplay loop>
-    <source src="data:audio/wav;base64,{alarm_base64}" type="audio/wav">
-    Your browser does not support the audio element.
-</audio>
-""" if alarm_base64 else ""
+# alarm_base64 = get_audio_base64("Alarm.mp3")
+# alarm_audio = f"""
+# <audio controls autoplay loop>
+#     <source src="data:audio/wav;base64,{alarm_base64}" type="audio/wav">
+#     Your browser does not support the audio element.
+# </audio>
+# """ if alarm_base64 else ""
 
 # ---------------------------
 # Streamlit config & header
