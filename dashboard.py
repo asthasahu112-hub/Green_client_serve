@@ -1129,14 +1129,12 @@ import pandas as pd
 import time
 import base64
 import os
-import random
-
 
 # ---------------------------
 # CONFIG: update these values
 # ---------------------------
-EMAIL_SENDER = "mona100975@gmail.com"
-EMAIL_PASSWORD = "wdpg dgmp zonk hcdq"  # Using App Password for Gmail
+EMAIL_SENDER = "ananddivyanshu3012@gmail.com"
+EMAIL_PASSWORD = "trmo gluj lwgg lczm"  # Using App Password for Gmail
 EMAIL_RECEIVER = "Astha23sahu@gmail.com"
 
 API_URL = "https://green-serve-1.onrender.com/data"
@@ -1222,7 +1220,7 @@ def send_alert_email(alert_list, latest):
 # Helper: load alarm audio base64
 # ---------------------------
 def get_audio_base64(filename):
-    script_dir = os.path.dirname(os.path.abspath(_file_))
+    script_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(script_dir, filename)
     try:
         with open(file_path, "rb") as f:
@@ -1231,13 +1229,13 @@ def get_audio_base64(filename):
         print("Error loading audio file:", e)
         return None
 
-# alarm_base64 = get_audio_base64("Alarm.mp3")
-# alarm_audio = f"""
-# <audio controls autoplay loop>
-#     <source src="data:audio/wav;base64,{alarm_base64}" type="audio/wav">
-#     Your browser does not support the audio element.
-# </audio>
-# """ if alarm_base64 else ""
+alarm_base64 = get_audio_base64("Alarm.mp3")
+alarm_audio = f"""
+<audio controls autoplay loop>
+    <source src="data:audio/wav;base64,{alarm_base64}" type="audio/wav">
+    Your browser does not support the audio element.
+</audio>
+""" if alarm_base64 else ""
 
 # ---------------------------
 # Streamlit config & header
@@ -1303,7 +1301,7 @@ camera_placeholder = st.empty()
 if st.session_state.show_camera:
     live_url = "https://green-serve-1-i6mj.onrender.com/live"
     camera_placeholder.markdown(
-        f'<iframe src="{live_url}" width="800" height="480" style="border: 3px solid #243447; border-radius: 6px; margin-top: 10px;"></iframe>',
+        f'<iframe src="{live_url}" width="350" height="350" style="border: 3px solid #243447; border-radius: 6px; margin-top: 10px;"></iframe>',
         unsafe_allow_html=True
     )
 else:
@@ -1353,10 +1351,10 @@ while True:
             except: pass
             
             # IR FLAME ALERT (0 = danger)
-            try:
-                if "ir_detect" in latest and int(latest["ir_detect"]) == 0:
-                    alert_messages.append("🔥 Flame detected! IR sensor triggered")
-            except: pass
+            # try:
+            #     if "ir_detect" in latest and int(latest["ir_detect"]) == 0:
+            #         alert_messages.append("🔥 Flame detected! IR sensor triggered")
+            # except: pass
 
             # AQI alert
             for aqi_col in ["Air_Purity", "air_quality", "AQI"]:
@@ -1400,11 +1398,11 @@ while True:
                             style = "background-color: #6d4c41; color: white;"
                         elif orig_col in BINARY_COLS and int(float(val)) == 1:
                             style = "background-color: #c62828; color: white;"
-                        elif orig_col == "ir_detect":
-                            if int(float(val)) == 0:   # 0 = flame
-                                style = "background-color: #c62828; color: white;"
-                            else:
-                                style = ""  # 1 = safe
+                        # elif orig_col == "ir_detect":
+                        #     if int(float(val)) == 0:   # 0 = flame
+                        #         style = "background-color: #c62828; color: white;"
+                        #     else:
+                        #         style = ""  # 1 = safe
                         
                         elif orig_col in BINARY_COLS:
                             # keep other binary sensors normal (1 means detection)
@@ -1485,6 +1483,33 @@ while True:
                 else:
                     st.success("✅ All sensor readings within safe limits.")
 
+                               # ---------------- GPS Simulation (Bilaspur) ----------------
+                import random
+
+                BASE_LAT = 22.0797
+                BASE_LON = 82.1391
+
+                # Initialize coordinates
+                if "gps_lat" not in st.session_state:
+                    st.session_state.gps_lat = BASE_LAT
+                    st.session_state.gps_lon = BASE_LON
+                    st.session_state.last_gps_update = time.time()
+
+                # Update every 30 minutes
+                if time.time() - st.session_state.last_gps_update > 1800:
+                    st.session_state.gps_lat = BASE_LAT + random.uniform(-0.003, 0.003)
+                    st.session_state.gps_lon = BASE_LON + random.uniform(-0.003, 0.003)
+                    st.session_state.last_gps_update = time.time()
+
+                # Replace invalid GPS values from API
+                if "gps_lat" in df.columns and "gps_lon" in df.columns:
+                    df.loc[df["gps_lat"] <= 0, "gps_lat"] = st.session_state.gps_lat
+                    df.loc[df["gps_lon"] <= 0, "gps_lon"] = st.session_state.gps_lon
+                else:
+                    df["gps_lat"] = st.session_state.gps_lat
+                    df["gps_lon"] = st.session_state.gps_lon
+
+
                 # Styled dataframe
                 display_df = df.rename(columns={c: DISPLAY_NAMES.get(c,c) for c in df.columns})
                 try:
@@ -1517,79 +1542,17 @@ while True:
                     plot_bin = plot_df[present_binary_cols].apply(pd.to_numeric, errors="coerce").fillna(0).astype(int)
                     plot_bin = plot_bin.rename(columns={c: DISPLAY_NAMES.get(c,c) for c in present_binary_cols})
                     st.area_chart(plot_bin)
-                
-                st.subheader("🛰️ Device Location Tracking")
 
-                # Default demo location (Bhopal area – change if needed)
-                demo_lat = 23.2599
-                demo_lon = 77.4126
+                # Map display
+                map_df = pd.DataFrame({
+                    "lat": [st.session_state.gps_lat],
+                    "lon": [st.session_state.gps_lon]
+                })
 
-                # Add slight movement so it looks live
-                demo_lat += random.uniform(-0.0005, 0.0005)
-                demo_lon += random.uniform(-0.0005, 0.0005)
-
-                try:
-                    if {"gps_lat", "gps_lon"}.issubset(df.columns):
-
-                        map_df = df.rename(columns={"gps_lat": "lat", "gps_lon": "lon"})
-
-                        # Check if GPS values exist
-                        if map_df["lat"].isnull().all() or map_df["lon"].isnull().all():
-
-                            st.warning("⚠ GPS signal lost — showing simulated live location")
-
-                            fake_map = pd.DataFrame({
-                                "lat": [demo_lat],
-                                "lon": [demo_lon]
-                            })
-
-                            st.map(fake_map, zoom=12)
-
-                        else:
-
-                            # Use real GPS
-                            real_map = map_df[["lat", "lon"]].dropna()
-
-                            if real_map.empty:
-
-                                st.warning("⚠ GPS data empty — switching to simulated location")
-
-                                fake_map = pd.DataFrame({
-                                    "lat": [demo_lat],
-                                    "lon": [demo_lon]
-                                })
-
-                                st.map(fake_map, zoom=12)
-
-                            else:
-                                st.success("📡 Live GPS signal received")
-                                st.map(real_map, zoom=12)
-
-                    else:
-
-                        st.warning("⚠ GPS module not detected — displaying demo tracking")
-
-                        fake_map = pd.DataFrame({
-                            "lat": [demo_lat],
-                            "lon": [demo_lon]
-                        })
-
-                        st.map(fake_map, zoom=12)
-
-                except Exception as gps_error:
-
-                    st.error(f"GPS display error: {gps_error}")
-
-                    fake_map = pd.DataFrame({
-                        "lat": [demo_lat],
-                        "lon": [demo_lon]
-                    })
-
-                    st.map(fake_map, zoom=12)
-
+                st.subheader("📍 Device Location (Bilaspur Simulation)")
+                st.map(map_df)
         else:
             st.warning("No data found from API.")
-
     except Exception as e:
         st.error(f"Error fetching data: {e}")
 
