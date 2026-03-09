@@ -1549,7 +1549,7 @@ while True:
                     "lon": [st.session_state.gps_lon]
                 })
 
-                st.subheader("📍 Device Location (Bilaspur Simulation)")
+                st.subheader("📍 Device Location")
                 st.map(map_df)
         else:
             st.warning("No data found from API.")
